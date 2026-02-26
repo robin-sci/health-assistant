@@ -1,7 +1,7 @@
 services:
   db:
     image: postgres:18
-    container_name: postgres__open-wearables
+    container_name: postgres__health-assistant
     environment:
       POSTGRES_DB: open-wearables
       POSTGRES_USER: open-wearables
@@ -20,8 +20,8 @@ services:
     build:
         context: ./backend
         dockerfile: Dockerfile
-    container_name: backend__open-wearables
-    image: open-wearables-platform:latest
+    container_name: backend__health-assistant
+    image: health-assistant-platform:latest
     pull_policy: never
     command: scripts/start/app.sh
     env_file:
@@ -58,8 +58,8 @@ services:
     restart: on-failure
 
   celery-worker:
-    container_name: celery-worker__open-wearables
-    image: open-wearables-platform:latest
+    container_name: celery-worker__health-assistant
+    image: health-assistant-platform:latest
     pull_policy: never
     command: scripts/start/worker.sh
     env_file:
@@ -81,8 +81,8 @@ services:
           target: /root_project/scripts
 
   celery-beat:
-    container_name: celery-beat__open-wearables
-    image: open-wearables-platform:latest
+    container_name: celery-beat__health-assistant
+    image: health-assistant-platform:latest
     pull_policy: never
     command: scripts/start/beat.sh
     env_file:
@@ -104,8 +104,8 @@ services:
           target: /root_project/scripts
 
   flower:
-    container_name: flower__open-wearables
-    image: open-wearables-platform:latest
+    container_name: flower__health-assistant
+    image: health-assistant-platform:latest
     pull_policy: never
     command: scripts/start/flower.sh
     env_file:
@@ -128,19 +128,26 @@ services:
             - .venv/
 
   redis:
-    container_name: redis__open-wearables
+    container_name: redis__health-assistant
     image: redis:8
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/var/lib/redis/data
 
+  docling:
+    image: ghcr.io/ds4sd/docling-serve:latest
+    container_name: docling__health-assistant
+    restart: on-failure
+    ports:
+      - "5001:5001"
+
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile.dev
-    container_name: frontend__open-wearables
-    image: open-wearables-frontend:dev
+    container_name: frontend__health-assistant
+    image: health-assistant-frontend:dev
     pull_policy: never
     ports:
       - "3000:3000"
@@ -165,3 +172,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  docling_data:
