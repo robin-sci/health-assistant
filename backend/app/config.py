@@ -133,6 +133,12 @@ class Settings(BaseSettings):
     ollama_extraction_model: str = "llama3.1:70b"
     ollama_timeout: int = 120
 
+    # OPENROUTER SETTINGS (temporary testing — Ollama is primary)
+    chat_provider: str = "ollama"  # "ollama" | "openrouter"
+    openrouter_api_key: SecretStr = SecretStr("")
+    openrouter_model: str = "google/gemini-2.0-flash-exp:free"
+    openrouter_base_url: str = "https://openrouter.ai/api/v1"
+
     # DOCLING SETTINGS
     docling_url: str = "http://docling:5001"
 
