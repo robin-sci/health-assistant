@@ -345,13 +345,13 @@ def get_wearable_summary(
         daily_values.append(
             {
                 "date": row.day.isoformat() if hasattr(row.day, "isoformat") else str(row.day),
-                "avg": round(avg_v, 1) if avg_v else None,
+                "avg": round(avg_v, 1) if avg_v is not None else None,
                 "min": _to_float(row.min_val),
                 "max": _to_float(row.max_val),
                 "data_points": row.count,
             }
         )
-        if avg_v:
+        if avg_v is not None:
             all_avgs.append(avg_v)
 
     stats = {}
@@ -406,7 +406,7 @@ def _get_sleep_summary(
                 "source": e.source_name,
             }
         )
-        if dur:
+        if dur is not None:
             durations.append(dur)
 
     stats = {}
@@ -464,7 +464,7 @@ def _get_workout_summary(
                 "source": e.source_name,
             }
         )
-        if dur:
+        if dur is not None:
             total_duration += dur
 
     return {

@@ -105,16 +105,15 @@ class OllamaService:
             "stream": True,
         }
 
-        async with self._client() as client:
-            async with client.stream("POST", "/api/chat", json=payload) as response:
-                response.raise_for_status()
-                async for line in response.aiter_lines():
-                    if not line.strip():
-                        continue
-                    chunk = json.loads(line)
-                    yield chunk
-                    if chunk.get("done"):
-                        break
+        async with self._client() as client, client.stream("POST", "/api/chat", json=payload) as response:
+            response.raise_for_status()
+            async for line in response.aiter_lines():
+                if not line.strip():
+                    continue
+                chunk = json.loads(line)
+                yield chunk
+                if chunk.get("done"):
+                    break
 
     async def chat_with_tools(
         self,
@@ -153,13 +152,11 @@ class OllamaService:
             tool_calls = assistant_message.get("tool_calls")
 
             if not tool_calls:
-                # No tool calls — stream the final text response
-                async for chunk in self.chat_stream(conversation, model=used_model):
-                    content = chunk.get("message", {}).get("content", "")
-                    if content:
-                        yield {"type": "content", "content": content}
-                    if chunk.get("done"):
-                        yield {"type": "done", "stats": {k: v for k, v in chunk.items() if k != "message"}}
+                # No tool calls — use this response directly
+                content = assistant_message.get("content", "")
+                if content:
+                    yield {"type": "content", "content": content}
+                yield {"type": "done", "stats": {k: v for k, v in response.items() if k != "message"}}
                 return
 
             # Append the assistant's tool-call message to conversation

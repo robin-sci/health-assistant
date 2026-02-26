@@ -129,11 +129,10 @@ class ChatService:
         self,
         db: Session,
         session_id: UUID,
-        new_user_message: str,
     ) -> list[dict[str, Any]]:
         """Build the full conversation message list for Ollama.
 
-        Includes system prompt, conversation history, and the new user message.
+        Includes system prompt and conversation history.
         """
         messages: list[dict[str, Any]] = []
 
@@ -155,14 +154,6 @@ class ChatService:
                     "content": msg.content,
                 }
             )
-
-        # Add new user message
-        messages.append(
-            {
-                "role": "user",
-                "content": new_user_message,
-            }
-        )
 
         return messages
 
@@ -186,7 +177,7 @@ class ChatService:
         self._save_message(db, session_id, "user", content)
 
         # Build conversation
-        messages = self._build_conversation_messages(db, session_id, content)
+        messages = self._build_conversation_messages(db, session_id)
 
         # Create tool executor bound to this user's data
         async def tool_executor(tool_name: str, arguments: dict) -> str:
