@@ -11,6 +11,8 @@ from uuid import UUID
 
 from sqlalchemy.orm import Session
 
+from app.config import settings
+
 from app.models.chat_message import ChatMessage
 from app.models.chat_session import ChatSession
 from app.repositories.chat_message_repository import ChatMessageRepository
@@ -22,6 +24,7 @@ from app.schemas.chat import (
 )
 from app.services.health_tools import HEALTH_TOOL_DEFINITIONS, execute_health_tool
 from app.services.ollama_service import ollama_service
+from app.services.openrouter_service import openrouter_service
 
 logger = logging.getLogger(__name__)
 
@@ -188,12 +191,13 @@ class ChatService:
                 user_id=user_id,
             )
 
-        # Stream response from Ollama with tool-calling
+        # Stream response from LLM provider (Ollama or OpenRouter) with tool-calling
         assistant_content_parts: list[str] = []
         tool_calls_metadata: list[dict] = []
 
         try:
-            async for event in ollama_service.chat_with_tools(
+            llm = openrouter_service if settings.chat_provider == "openrouter" else ollama_service
+            async for event in llm.chat_with_tools(
                 messages=messages,
                 tools=HEALTH_TOOL_DEFINITIONS,
                 tool_executor=tool_executor,
