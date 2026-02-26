@@ -1,9 +1,10 @@
 from fastapi import APIRouter
 
-from .api_keys import router as api_keys_router
 from .ai import router as ai_router
+from .api_keys import router as api_keys_router
 from .applications import router as applications_router
 from .auth import router as auth_router
+from .chat import router as chat_router
 from .connections import router as connections_router
 from .dashboard import router as dashboard_router
 from .developers import router as developers_router
@@ -63,5 +64,6 @@ v1_router.include_router(token_router, tags=["token"])
 
 # Health Assistant AI
 v1_router.include_router(ai_router, tags=["ai"])
+v1_router.include_router(chat_router, tags=["chat"])
 
 __all__ = ["v1_router"]

@@ -1,10 +1,10 @@
 from typing import TYPE_CHECKING
 from uuid import UUID
 
-from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import Mapped, relationship
 
 from app.database import BaseDbModel
-from app.mappings import FKUser, OneToMany, PrimaryKey, datetime_tz, str_255
+from app.mappings import FKUser, PrimaryKey, datetime_tz, str_255
 
 if TYPE_CHECKING:
     from app.models.chat_message import ChatMessage
@@ -21,4 +21,9 @@ class ChatSession(BaseDbModel):
     created_at: Mapped[datetime_tz]
     last_activity_at: Mapped[datetime_tz]
 
-    messages: Mapped[OneToMany["ChatMessage"]]
+    messages: Mapped[list["ChatMessage"]] = relationship(
+        "ChatMessage",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )

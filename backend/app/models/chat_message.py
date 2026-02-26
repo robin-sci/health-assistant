@@ -2,10 +2,10 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import Index
-from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import Mapped, relationship
 
 from app.database import BaseDbModel
-from app.mappings import FKChatSession, ManyToOne, PrimaryKey, datetime_tz, str_50
+from app.mappings import FKChatSession, PrimaryKey, datetime_tz, str_50
 
 if TYPE_CHECKING:
     from app.models.chat_session import ChatSession
@@ -24,4 +24,4 @@ class ChatMessage(BaseDbModel):
     message_metadata: Mapped[dict | None]
     created_at: Mapped[datetime_tz]
 
-    session: Mapped[ManyToOne["ChatSession"]]
+    session: Mapped["ChatSession"] = relationship("ChatSession", back_populates="messages")
