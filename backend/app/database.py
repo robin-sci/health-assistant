@@ -3,8 +3,7 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends
-from sqlalchemy import UUID as SQL_UUID
-from sqlalchemy import Engine, String, Text, create_engine, inspect
+from sqlalchemy import Engine, JSON, String, Text, UUID as SQL_UUID, create_engine, inspect
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
@@ -72,6 +71,8 @@ class BaseDbModel(DeclarativeBase, metaclass=AutoRelMeta):
         InvitationStatus: String(50),
         ProviderName: String(50),
         TokenType: String(64),
+        dict: JSON,
+        list: JSON,
     }
 
 

@@ -65,3 +65,11 @@ FKSeriesTypeDefinition = Annotated[
     int,
     mapped_column(ForeignKey("series_type_definition.id", ondelete="RESTRICT")),
 ]
+FKMedicalDocument = Annotated[
+    UUID | None,
+    mapped_column(ForeignKey("medical_document.id", ondelete="SET NULL"), nullable=True),
+]
+FKChatSession = Annotated[
+    UUID,
+    mapped_column(ForeignKey("chat_session.id", ondelete="CASCADE")),
+]
