@@ -13,6 +13,7 @@ from .external_connectors import router as external_connectors_router
 from .garmin_webhooks import router as garmin_webhooks_router
 from .import_xml import router as import_xml_router
 from .invitations import router as invitations_router
+from .labs import router as labs_router
 from .oauth import router as oauth_router
 from .priorities import router as priorities_router
 from .sdk_sync import router as sdk_sync_router
@@ -20,6 +21,7 @@ from .sdk_token import router as sdk_token_router
 from .strava_webhooks import router as strava_webhooks_router
 from .summaries import router as summaries_router
 from .suunto_debug import router as suunto_debug_router
+from .symptoms import router as symptoms_router
 from .sync_data import router as sync_data_router
 from .timeseries import router as timeseries_router
 from .token import router as token_router
@@ -65,5 +67,7 @@ v1_router.include_router(token_router, tags=["token"])
 # Health Assistant AI
 v1_router.include_router(ai_router, tags=["ai"])
 v1_router.include_router(chat_router, tags=["chat"])
+v1_router.include_router(labs_router, tags=["labs"])
+v1_router.include_router(symptoms_router, tags=["symptoms"])
 
 __all__ = ["v1_router"]
