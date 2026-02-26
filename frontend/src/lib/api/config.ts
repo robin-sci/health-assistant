@@ -80,4 +80,9 @@ export const API_ENDPOINTS = {
 
   // Sleep sessions endpoint
   userSleepSessions: (userId: string) => `/api/v1/users/${userId}/events/sleep`,
+
+  // Chat endpoints
+  chatSessions: '/api/v1/chat/sessions',
+  chatSessionDetail: (id: string) => `/api/v1/chat/sessions/${id}`,
+  chatSessionMessages: (id: string) => `/api/v1/chat/sessions/${id}/messages`,
 } as const;

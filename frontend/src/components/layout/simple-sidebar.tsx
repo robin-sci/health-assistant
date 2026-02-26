@@ -6,6 +6,7 @@ import {
   LogOut,
   Settings,
   ExternalLink,
+  MessageSquare,
 } from 'lucide-react';
 import logotype from '@/logotype.svg';
 import { cn } from '@/lib/utils';
@@ -18,6 +19,11 @@ const menuItems = [
     title: 'Dashboard',
     url: ROUTES.dashboard,
     icon: Home,
+  },
+  {
+    title: 'Chat',
+    url: ROUTES.chat,
+    icon: MessageSquare,
   },
   {
     title: 'Users',

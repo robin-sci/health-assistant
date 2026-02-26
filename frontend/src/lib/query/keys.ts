@@ -111,9 +111,12 @@ export const queryKeys = {
   },
 
   chat: {
-    all: (userId?: string) => ['chat', userId] as const,
-    history: (userId?: string) =>
-      [...queryKeys.chat.all(userId), 'history'] as const,
+    all: ['chat'] as const,
+    sessions: (userId: string) =>
+      [...queryKeys.chat.all, 'sessions', userId] as const,
+    session: (id: string) => [...queryKeys.chat.all, 'session', id] as const,
+    messages: (sessionId: string) =>
+      [...queryKeys.chat.all, 'messages', sessionId] as const,
   },
 
   oauthProviders: {

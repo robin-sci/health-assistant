@@ -466,11 +466,35 @@ export interface TriggersByTypeDataPoint {
   count: number;
 }
 
-export interface ChatMessage {
+// Health Assistant Chat Types
+export interface ChatSession {
   id: string;
-  role: 'user' | 'assistant';
+  user_id: string;
+  title: string | null;
+  created_at: string;
+  last_activity_at: string;
+}
+
+export interface ChatSessionDetail extends ChatSession {
+  messages: HAChatMessage[];
+}
+
+export interface HAChatMessage {
+  id: string;
+  session_id: string;
+  role: 'user' | 'assistant' | 'system' | 'tool';
   content: string;
-  timestamp: string;
+  message_metadata: Record<string, unknown> | null;
+  created_at: string;
+}
+
+export interface ChatStreamEvent {
+  type: 'content' | 'tool_call' | 'tool_result' | 'done' | 'error';
+  content?: string;
+  name?: string;
+  arguments?: Record<string, unknown>;
+  result?: string;
+  error?: string;
 }
 
 export interface ChatRequest {
