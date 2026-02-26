@@ -1,4 +1,4 @@
-"""Open Wearables MCP Server - Main entry point."""
+"""Health Assistant MCP Server - Main entry point."""
 
 import logging
 from datetime import date
@@ -8,6 +8,7 @@ from fastmcp import FastMCP
 from app.config import settings
 from app.prompts import prompts_router
 from app.tools.activity import activity_router
+from app.tools.health import health_router
 from app.tools.sleep import sleep_router
 from app.tools.users import users_router
 from app.tools.workouts import workouts_router
@@ -22,19 +23,22 @@ logger = logging.getLogger(__name__)
 
 # Create FastMCP server instance
 mcp = FastMCP(
-    "open-wearables",
+    "health-assistant",
     instructions=f"""
     Today's date is {date.today().isoformat()}.
 
-    Enables the model to query data describing user health states and general wellness metrics.
-    Data is acquired from users' wearable devices (Garmin, Whoop, Polar, Suunto, etc.),
-    covering all user-connected devices and providers, aggregated into a single unified format.
+    Enables the model to query comprehensive health data including wearable metrics,
+    medical lab results, and symptom tracking entries.
+    Wearable data is acquired from users' devices (Garmin, Whoop, Polar, Suunto, Apple Health),
 
     Available tools:
     - get_users: Discover users accessible via your API key
     - get_activity_summary: Get daily activity data (steps, calories, heart rate, intensity minutes)
     - get_sleep_summary: Get sleep data for a user over a specified time period
     - get_workout_events: Get workout/exercise data for a user over a specified time period
+    - get_lab_results: Get recent blood test/lab results with reference ranges
+    - get_lab_trends: Track how a specific lab marker changes over time
+    - get_symptom_history: Get symptom entries with severity, duration, and triggers
 
     Available prompts:
     - present_health_data: Guidelines for formatting health data for human readability
@@ -107,6 +111,8 @@ mcp = FastMCP(
 
     The API key determines which users you can access (personal, team, or enterprise scope).
     All data is returned in a normalized format regardless of the original wearable provider.
+    For health questions, combine wearable data with lab results and symptom history for
+    comprehensive insights.
     """,
 )
 
@@ -115,11 +121,12 @@ mcp.mount(users_router)
 mcp.mount(activity_router)
 mcp.mount(sleep_router)
 mcp.mount(workouts_router)
+mcp.mount(health_router)
 
 # Mount prompts
 mcp.mount(prompts_router)
 
-logger.info(f"Open Wearables MCP server initialized. API URL: {settings.open_wearables_api_url}")
+logger.info(f"Health Assistant MCP server initialized. API URL: {settings.open_wearables_api_url}")
 
 
 def main() -> None:

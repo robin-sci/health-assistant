@@ -34,7 +34,7 @@ class OpenWearablesClient:
             "Content-Type": "application/json",
         }
 
-    async def _request(self, method: str, path: str, **kwargs: Any) -> dict[str, Any]:
+    async def _request(self, method: str, path: str, **kwargs: Any) -> Any:
         """Make an HTTP request to the backend API."""
         self._ensure_configured()
         url = f"{self.base_url}{path}"
@@ -166,6 +166,58 @@ class OpenWearablesClient:
             "limit": limit,
         }
         return await self._request("GET", f"/api/v1/users/{user_id}/summaries/activity", params=params)
+
+    async def get_lab_results(
+        self,
+        user_id: str,
+        days: int = 90,
+        test_name: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """
+        Get recent lab results for a user.
+        """
+        params: dict[str, Any] = {"user_id": user_id, "days": days}
+        if test_name:
+            params["test_name"] = test_name
+        return await self._request("GET", "/api/v1/labs", params=params)
+
+    async def get_lab_trends(
+        self,
+        user_id: str,
+        test_name: str,
+        months: int = 12,
+    ) -> dict[str, Any]:
+        """
+        Get trend data for a specific lab test.
+        """
+        params: dict[str, Any] = {"user_id": user_id, "months": months}
+        return await self._request("GET", f"/api/v1/labs/trends/{test_name}", params=params)
+
+    async def get_symptoms(
+        self,
+        user_id: str,
+        days: int = 30,
+        symptom_type: str | None = None,
+    ) -> list[dict[str, Any]]:
+        """
+        Get symptom entries for a user.
+        """
+        params: dict[str, Any] = {"user_id": user_id, "days": days}
+        if symptom_type:
+            params["symptom_type"] = symptom_type
+        return await self._request("GET", "/api/v1/symptoms", params=params)
+
+    async def get_symptom_types(self, user_id: str) -> list[str]:
+        """
+        Get all distinct symptom types for a user.
+        """
+        return await self._request("GET", "/api/v1/symptoms/types", params={"user_id": user_id})
+
+    async def create_symptom(self, data: dict[str, Any]) -> dict[str, Any]:
+        """
+        Create a new symptom entry.
+        """
+        return await self._request("POST", "/api/v1/symptoms", json=data)
 
 
 # Singleton instance
