@@ -1,6 +1,7 @@
 from fastapi import APIRouter
 
 from .api_keys import router as api_keys_router
+from .ai import router as ai_router
 from .applications import router as applications_router
 from .auth import router as auth_router
 from .connections import router as connections_router
@@ -59,5 +60,8 @@ v1_router.include_router(events_router, tags=["Events"])
 
 # Token refresh endpoint
 v1_router.include_router(token_router, tags=["token"])
+
+# Health Assistant AI
+v1_router.include_router(ai_router, tags=["ai"])
 
 __all__ = ["v1_router"]

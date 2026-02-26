@@ -127,6 +127,15 @@ class Settings(BaseSettings):
 
     xml_chunk_size: int = 50_000
 
+    # OLLAMA SETTINGS (AI Chat)
+    ollama_host: str = "http://localhost:11434"
+    ollama_chat_model: str = "llama3.1:8b"
+    ollama_extraction_model: str = "llama3.1:70b"
+    ollama_timeout: int = 120
+
+    # DOCLING SETTINGS
+    docling_url: str = "http://docling:5001"
+
     @field_validator("cors_origins", mode="after")
     @classmethod
     def assemble_cors_origins(cls, v: str | list[str]) -> list[str] | str:
