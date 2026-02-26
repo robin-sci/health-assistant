@@ -10,6 +10,7 @@ This file extends the root AGENTS.md with frontend-specific patterns.
 - Tailwind CSS 4.0 + shadcn/ui for styling
 - Sonner for toast notifications
 - Lucide React for icons
+- react-markdown for AI chat rendering
 - Vitest for testing
 
 ### Resources
@@ -26,19 +27,27 @@ src/
 │   ├── __root.tsx       # Root layout with providers
 │   ├── _authenticated.tsx  # Protected route guard
 │   └── _authenticated/  # Protected pages
+│       ├── dashboard.tsx
+│       ├── chat.tsx     # AI chat page (NEW)
+│       └── users.tsx
 ├── components/
 │   ├── ui/              # shadcn/ui components
 │   ├── common/          # Shared components (LoadingSpinner, ErrorState)
+│   ├── chat/            # Chat UI components (NEW)
+│   │   ├── chat-sidebar.tsx        # Session list with new/delete
+│   │   ├── chat-messages.tsx       # Scrollable message list
+│   │   ├── chat-input.tsx          # Auto-resize textarea + send
+│   │   └── chat-stream-message.tsx # Markdown + tool call badges
 │   └── [feature]/       # Feature components (user/, settings/)
 ├── hooks/
-│   ├── api/             # React Query hooks (use-users.ts, use-health.ts)
+│   ├── api/             # React Query hooks (use-users.ts, use-chat.ts)
 │   └── use-*.ts         # Custom hooks (use-auth.ts, use-mobile.ts)
 ├── lib/
 │   ├── api/
 │   │   ├── client.ts    # API client with retry logic
 │   │   ├── config.ts    # Base URL, endpoints
-│   │   ├── types.ts     # API types
-│   │   └── services/    # Service modules
+│   │   ├── types.ts     # API types (incl. ChatSession, HAChatMessage)
+│   │   └── services/    # Service modules (incl. chat.service.ts)
 │   ├── auth/session.ts  # Session management (localStorage)
 │   ├── constants/
 │   │   └── routes.ts    # Centralized route paths and redirects
@@ -61,17 +70,20 @@ src/
 | `SectionHeader` | Section title with optional date range selector |
 | `CursorPagination` | Previous/next navigation for cursor-based pagination |
 
+### chat/ (NEW — Health AI Assistant)
+
+| Component | Props | Description |
+|-----------|-------|-------------|
+| `ChatSidebar` | sessions, selectedSessionId, onSelectSession, onNewChat, onDeleteSession | Session list with "New Chat" button, delete on hover, relative timestamps |
+| `ChatMessages` | messages, streamingMessage, isStreaming | Scrollable message list with auto-scroll, welcome empty state with suggestions |
+| `ChatInput` | onSend, isStreaming, isDisabled | Auto-resizing textarea, Enter to send, Shift+Enter for newline |
+| `ChatStreamMessage` | content, toolCalls, isStreaming, events | Renders markdown via react-markdown, tool call badges, typing cursor |
+
 ### layout/
 
 | Component | Description |
 |-----------|-------------|
 | `SimpleSidebar` | Navigation sidebar with menu items and logout button |
-
-### login/
-
-| Component | Description |
-|-----------|-------------|
-| `CodePreviewCard` | Decorative code editor preview for login/register pages |
 
 ### pages/dashboard/
 
@@ -85,12 +97,6 @@ src/
 | `DataMetricsSection` | Displays top series and workout types |
 | `RecentUsersSection` | Recent users list with status badges |
 
-### settings/providers/
-
-| Component | Description |
-|-----------|-------------|
-| `ProviderItem` | Wearable provider row with connection toggle switch |
-
 ### user/
 
 | Component | Description |
@@ -101,12 +107,6 @@ src/
 | `ActivitySection` | Activity metrics with dynamic chart selection |
 | `WorkoutSection` | Workout list with heart rate time series chart |
 | `ConnectionCard` | Provider connection status with sync button |
-
-### users/
-
-| Component | Description |
-|-----------|-------------|
-| `UsersTable` | Data table with sorting, search, pagination, and row actions |
 
 ## Common Patterns
 
@@ -136,40 +136,116 @@ export function useUser(id: string) {
   });
 }
 
-// Mutation with optimistic updates
-export function useUpdateUser() {
+// Mutation with cache invalidation
+export function useCreateUser() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UserUpdate }) =>
-      usersService.update(id, data),
-    onMutate: async ({ id, data }) => {
-      await queryClient.cancelQueries({ queryKey: queryKeys.users.detail(id) });
-      const previousUser = queryClient.getQueryData<UserRead>(
-        queryKeys.users.detail(id)
-      );
-      // Optimistically update cache
-      if (previousUser) {
-        queryClient.setQueryData(queryKeys.users.detail(id), {
-          ...previousUser,
-          ...data,
-        });
-      }
-      return { previousUser };
-    },
-    onSuccess: (updatedUser, { id }) => {
-      queryClient.setQueryData(queryKeys.users.detail(id), updatedUser);
+    mutationFn: (data: UserCreate) => usersService.create(data),
+    onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.users.lists() });
-      toast.success('User updated successfully');
+      toast.success('User created successfully');
     },
-    onError: (error, { id }, context) => {
-      // Rollback on error
-      if (context?.previousUser) {
-        queryClient.setQueryData(queryKeys.users.detail(id), context.previousUser);
-      }
-      toast.error(error instanceof Error ? error.message : 'Failed to update');
+    onError: (error: unknown) => {
+      const message =
+        error instanceof Error ? error.message : 'Failed to create user';
+      toast.error(message);
     },
   });
+}
+```
+
+### Chat Hooks Pattern
+
+```typescript
+// src/hooks/api/use-chat.ts
+export function useChatSessions(userId: string) {
+  return useQuery({
+    queryKey: queryKeys.chat.sessions(userId),
+    queryFn: () => chatService.getSessions(userId),
+    enabled: !!userId,
+  });
+}
+
+export function useCreateChatSession() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ userId, title }: { userId: string; title?: string }) =>
+      chatService.createSession(userId, title),
+    onSuccess: (_data, { userId }) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.chat.sessions(userId),
+      });
+    },
+  });
+}
+```
+
+### SSE Streaming Pattern (Chat)
+
+The chat service uses an **async generator** for SSE streaming — NOT the apiClient (which doesn't support streaming).
+
+```typescript
+// src/lib/api/services/chat.service.ts
+import { getToken } from '../../auth/session';
+import { API_CONFIG, API_ENDPOINTS } from '../config';
+
+export const chatService = {
+  // Standard CRUD uses apiClient as usual
+  async getSessions(userId: string): Promise<ChatSession[]> {
+    return apiClient.get<ChatSession[]>(
+      `${API_ENDPOINTS.chatSessions}?user_id=${userId}`
+    );
+  },
+
+  // SSE streaming uses raw fetch + async generator
+  async *streamMessage(
+    sessionId: string,
+    content: string
+  ): AsyncGenerator<ChatStreamEvent> {
+    const token = getToken();
+    const url = `${API_CONFIG.baseUrl}${API_ENDPOINTS.chatSessionMessages(sessionId)}`;
+
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      body: JSON.stringify({ content }),
+    });
+
+    const reader = response.body!.getReader();
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        const trimmed = line.trim();
+        if (!trimmed.startsWith('data: ')) continue;
+        const event = JSON.parse(trimmed.slice(6)) as ChatStreamEvent;
+        yield event;
+        if (event.type === 'done' || event.type === 'error') return;
+      }
+    }
+  },
+};
+```
+
+**Usage in chat page** (`routes/_authenticated/chat.tsx`):
+```typescript
+const stream = chatService.streamMessage(sessionId, content);
+for await (const event of stream) {
+  if (event.type === 'content') { /* append to streaming message */ }
+  if (event.type === 'tool_call') { /* show tool badge */ }
+  if (event.type === 'done') break;
 }
 ```
 
@@ -186,12 +262,14 @@ export const queryKeys = {
     details: () => [...queryKeys.users.all, 'detail'] as const,
     detail: (id: string) => [...queryKeys.users.details(), id] as const,
   },
-  health: {
-    all: ['health'] as const,
-    connections: (userId: string) =>
-      [...queryKeys.health.all, 'connections', userId] as const,
-    heartRate: (userId: string, deviceId: string, days: number) =>
-      [...queryKeys.health.all, 'heartRate', userId, deviceId, days] as const,
+  chat: {
+    all: ['chat'] as const,
+    sessions: (userId: string) =>
+      [...queryKeys.chat.all, 'sessions', userId] as const,
+    session: (id: string) =>
+      [...queryKeys.chat.all, 'session', id] as const,
+    messages: (sessionId: string) =>
+      [...queryKeys.chat.all, 'messages', sessionId] as const,
   },
 };
 ```
@@ -214,6 +292,7 @@ export const ROUTES = {
   dashboard: '/dashboard',
   users: '/users',
   settings: '/settings',
+  chat: '/chat',
 
   // Widget routes
   widgetConnect: '/widget/connect',
@@ -223,87 +302,6 @@ export const DEFAULT_REDIRECTS = {
   authenticated: ROUTES.dashboard,
   unauthenticated: ROUTES.login,
 } as const;
-```
-
-**Usage examples:**
-
-```typescript
-// For redirects (use DEFAULT_REDIRECTS)
-import { DEFAULT_REDIRECTS } from '@/lib/constants/routes';
-
-navigate({ to: DEFAULT_REDIRECTS.authenticated });
-throw redirect({ to: DEFAULT_REDIRECTS.unauthenticated });
-
-// For links and navigation (use ROUTES)
-import { ROUTES } from '@/lib/constants/routes';
-
-<Link to={ROUTES.login}>Sign in</Link>
-navigate({ to: ROUTES.users });
-```
-
-### Zod Validation Schemas
-
-```typescript
-// src/lib/validation/auth.schemas.ts
-import { z } from 'zod';
-
-export const emailSchema = z
-  .string()
-  .min(1, 'Email is required')
-  .email('Please enter a valid email address');
-
-export const passwordSchema = z
-  .string()
-  .min(8, 'Password must be at least 8 characters')
-  .refine(
-    (val) => /[A-Z]/.test(val) && /[a-z]/.test(val) || /[0-9]/.test(val),
-    { message: 'Password must contain mixed case or a number' }
-  );
-
-export const registerSchema = z
-  .object({
-    email: emailSchema,
-    password: passwordSchema,
-    confirmPassword: z.string().min(1, 'Please confirm your password'),
-  })
-  .refine((data) => data.password === data.confirmPassword, {
-    message: 'Passwords do not match',
-    path: ['confirmPassword'],
-  });
-
-export type RegisterFormData = z.infer<typeof registerSchema>;
-```
-
-### Forms with React Hook Form
-
-```typescript
-// In a route or component
-import { useForm } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { registerSchema, type RegisterFormData } from '@/lib/validation/auth.schemas';
-
-function RegisterPage() {
-  const form = useForm<RegisterFormData>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: { email: '', password: '', confirmPassword: '' },
-  });
-
-  const onSubmit = (data: RegisterFormData) => {
-    // Handle submission
-  };
-
-  return (
-    <form onSubmit={form.handleSubmit(onSubmit)}>
-      <Input {...form.register('email')} placeholder="Email" />
-      {form.formState.errors.email && (
-        <p className="text-xs text-red-500">
-          {form.formState.errors.email.message}
-        </p>
-      )}
-      <Button type="submit">Register</Button>
-    </form>
-  );
-}
 ```
 
 ### Protected Routes
@@ -317,80 +315,50 @@ import { DEFAULT_REDIRECTS } from '@/lib/constants/routes';
 export const Route = createFileRoute('/_authenticated')({
   component: AuthenticatedLayout,
   beforeLoad: () => {
-    // Skip during SSR (localStorage not available)
     if (typeof window === 'undefined') return;
     if (!isAuthenticated()) {
       throw redirect({ to: DEFAULT_REDIRECTS.unauthenticated });
     }
   },
 });
-
-function AuthenticatedLayout() {
-  return (
-    <div className="flex min-h-screen">
-      <Sidebar />
-      <main className="flex-1">
-        <Outlet />
-      </main>
-    </div>
-  );
-}
 ```
 
 ### API Client
 
 ```typescript
-// src/lib/api/client.ts
-import { ROUTES } from '../constants/routes';
-
+// src/lib/api/client.ts — standard CRUD requests
 export const apiClient = {
   async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
     const url = `${API_CONFIG.baseUrl}${endpoint}`;
     const token = getToken();
-
-    const headers: Record<string, string> = {
+    const headers = {
       'Content-Type': 'application/json',
       ...(token && { Authorization: `Bearer ${token}` }),
     };
-
     const response = await fetchWithRetry(url, { ...options, headers });
-
     if (response.status === 401) {
       clearSession();
       window.location.href = ROUTES.login;
     }
-
-    if (!response.ok) {
-      throw ApiError.fromResponse(response);
-    }
-
+    if (!response.ok) throw ApiError.fromResponse(response);
     return response.json();
   },
-
-  get<T>(endpoint: string) { return this.request<T>(endpoint, { method: 'GET' }); },
-  post<T>(endpoint: string, body: unknown) {
-    return this.request<T>(endpoint, { method: 'POST', body: JSON.stringify(body) });
-  },
-  patch<T>(endpoint: string, body: unknown) {
-    return this.request<T>(endpoint, { method: 'PATCH', body: JSON.stringify(body) });
-  },
-  delete<T>(endpoint: string) { return this.request<T>(endpoint, { method: 'DELETE' }); },
+  get<T>(endpoint: string) { /* ... */ },
+  post<T>(endpoint: string, body: unknown) { /* ... */ },
+  patch<T>(endpoint: string, body: unknown) { /* ... */ },
+  delete<T>(endpoint: string) { /* ... */ },
 };
 ```
+
+**Note:** `apiClient` does NOT support streaming. For SSE (chat), use raw `fetch()` with `getToken()` from `lib/auth/session.ts`.
 
 ### Toast Notifications
 
 ```typescript
 import { toast } from 'sonner';
 
-// Success
 toast.success('User created successfully');
-
-// Error
 toast.error('Failed to save changes');
-
-// With action
-toast.success('Copied to clipboard');
 
 // In mutations (common pattern)
 onSuccess: () => {
@@ -407,7 +375,6 @@ onError: (error) => {
 ```bash
 pnpm dlx shadcn@latest add button
 pnpm dlx shadcn@latest add card
-pnpm dlx shadcn@latest add input
 ```
 
 Components are installed to `src/components/ui/`.

@@ -10,23 +10,25 @@ This file extends the root AGENTS.md with backend-specific patterns.
 - Alembic for migrations
 - Celery + Redis for background jobs
 - Ruff for linting/formatting
+- Ollama for local LLM inference (chat + extraction)
 
 ## Project Structure
 
 ```
 app/
 ├── api/
-│   └── routes/v1/       # API endpoints
-├── models/              # SQLAlchemy models
+│   └── routes/v1/       # API endpoints (incl. chat, ai)
+├── models/              # SQLAlchemy models (incl. health assistant)
 ├── schemas/             # Pydantic schemas
-├── services/            # Business logic
+├── services/            # Business logic (incl. Ollama, health tools, chat)
 │   └── providers/       # Wearable provider integrations
 ├── repositories/        # Data access layer
 ├── integrations/        # External services (Celery, Redis)
 ├── utils/               # Utilities and helpers
-└── config.py            # Settings
+├── constants/           # Workout types, enums
+└── config.py            # Settings (incl. Ollama host, Docling URL)
 migrations/              # Alembic migrations
-scripts/                 # Utility scripts
+scripts/                 # Utility scripts (incl. seed_health_data.py)
 ```
 
 ## Common Patterns
@@ -177,10 +179,10 @@ except Exception as e:
 ```
 
 **When to use `log_and_capture_error`:**
-- ✅ Celery tasks that catch exceptions and return error responses instead of failing
-- ✅ Batch processing where you want to continue despite errors
-- ✅ Multi-provider sync where one provider failure shouldn't stop others
-- ❌ Don't use if exception is re-raised or allowed to propagate naturally
+- Celery tasks that catch exceptions and return error responses instead of failing
+- Batch processing where you want to continue despite errors
+- Multi-provider sync where one provider failure shouldn't stop others
+- Don't use if exception is re-raised or allowed to propagate naturally
 
 ### Provider Strategy Pattern
 
@@ -198,6 +200,129 @@ class GarminStrategy(BaseProviderStrategy):
         return "https://apis.garmin.com"
 ```
 
+## Health Assistant Models
+
+Five additional models for the health AI features. All use `BaseDbModel`.
+
+| Model | Table | Purpose | Key FKs |
+|-------|-------|---------|---------|
+| `MedicalDocument` | `medical_document` | Uploaded PDFs/images | `FKUser` |
+| `LabResult` | `lab_result` | Parsed blood test values | `FKUser`, `document_id` (nullable, SET NULL) |
+| `SymptomEntry` | `symptom_entry` | Daily symptom tracking | `FKUser` |
+| `ChatSession` | `chat_session` | AI chat conversation | `FKUser` |
+| `ChatMessage` | `chat_message` | Individual chat message | `FKChatSession` |
+
+**ChatSession/ChatMessage use explicit `relationship()`** with `cascade="all, delete-orphan"` — NOT `OneToMany`/`ManyToOne` type aliases. This avoids the AutoRelMeta back_populates bug (see root AGENTS.md anti-patterns).
+
+```python
+# app/models/chat_session.py — correct cascade pattern
+class ChatSession(BaseDbModel):
+    __tablename__ = "chat_session"
+    # ... fields ...
+    messages: Mapped[list["ChatMessage"]] = relationship(
+        "ChatMessage", back_populates="session", cascade="all, delete-orphan"
+    )
+```
+
+**JSON columns**: `Mapped[dict | None]` and `Mapped[list | None]` work because `database.py` maps `dict → JSON` and `list → JSON` in `type_annotation_map`.
+
+**LabResult.document_id**: Nullable FK with `ondelete="SET NULL"` — lab results survive document deletion, seeded data doesn't need a parent document.
+
+## Health Assistant Services
+
+### OllamaService (`app/services/ollama_service.py`)
+
+Singleton for Ollama LLM communication. Configured via `config.py` settings.
+
+```python
+from app.services.ollama_service import ollama_service
+
+# Health check
+status = await ollama_service.health_check()  # -> dict with status, host, models
+
+# Simple chat
+response = await ollama_service.chat(messages=[{"role": "user", "content": "Hi"}])
+
+# Streaming chat
+async for chunk in ollama_service.chat_stream(messages):
+    print(chunk["message"]["content"])
+
+# Chat with tool-calling (used by ChatService)
+async for event in ollama_service.chat_with_tools(messages, tools, tool_executor):
+    # event types: tool_call, tool_result, content, done
+```
+
+**Config** (`backend/config/.env`):
+- `OLLAMA_HOST` — LAN URL to Ollama server (e.g., `http://192.168.1.100:11434`)
+- `OLLAMA_CHAT_MODEL` — Model for chat (e.g., `qwen2.5:14b`)
+- `OLLAMA_EXTRACTION_MODEL` — Model for document extraction
+- `OLLAMA_TIMEOUT` — Request timeout in seconds
+
+### Health Tools (`app/services/health_tools.py`)
+
+6 tools in OpenAI function-calling schema, dispatched via `execute_health_tool()`:
+
+| Tool | Description |
+|------|-------------|
+| `get_recent_labs` | Recent lab results (days, test_name filters) |
+| `get_lab_trend` | Time-series trend for a specific lab test |
+| `get_symptom_timeline` | Symptom entries over time period |
+| `get_wearable_summary` | Heart rate, steps, HRV summary |
+| `get_daily_summary` | Combined health snapshot for a date |
+| `correlate_metrics` | Cross-correlate labs, symptoms, wearables |
+
+```python
+from app.services.health_tools import HEALTH_TOOL_DEFINITIONS, execute_health_tool
+
+# HEALTH_TOOL_DEFINITIONS is a list of dicts in Ollama/OpenAI function-calling format
+result_json = await execute_health_tool("get_recent_labs", {"days": 90}, db, user_id)
+```
+
+### ChatService (`app/services/chat_service.py`)
+
+Session CRUD + SSE streaming with tool-calling. Singleton.
+
+```python
+from app.services.chat_service import chat_service
+
+# CRUD
+session = chat_service.create_session(db, user_id, title="My Chat")
+sessions = chat_service.get_sessions_for_user(db, user_id)
+messages = chat_service.get_messages(db, session_id)
+
+# SSE streaming (used by chat route)
+async for event in chat_service.send_message_stream(db, session_id, user_id, "How's my health?"):
+    # event types: content, tool_call, tool_result, done, error
+```
+
+## Health Assistant API Routes
+
+### AI Status (`app/api/routes/v1/ai.py`)
+- `GET /ai/status` — Ollama connectivity check
+
+### Chat (`app/api/routes/v1/chat.py`)
+- `POST /chat/sessions` — Create session (`{user_id, title?}` → 201)
+- `GET /chat/sessions?user_id=UUID` — List sessions
+- `GET /chat/sessions/{id}` — Session detail with messages
+- `DELETE /chat/sessions/{id}` — Delete session + messages (cascade)
+- `GET /chat/sessions/{id}/messages` — List messages
+- `POST /chat/sessions/{id}/messages` — Send message → SSE stream
+
+**SSE stream format** (`text/event-stream`):
+```
+data: {"type":"content","content":"text chunk..."}\n\n
+data: {"type":"tool_call","name":"get_recent_labs","arguments":{"days":90}}\n\n
+data: {"type":"tool_result","name":"get_recent_labs","result":"{...}"}\n\n
+data: {"type":"done"}\n\n
+data: {"type":"error","error":"message"}\n\n
+```
+
+**Route registration** in `v1/__init__.py`:
+```python
+v1_router.include_router(ai_router, tags=["ai"])
+v1_router.include_router(chat_router, prefix="/chat", tags=["chat"])
+```
+
 ## Database Migrations
 
 ```bash
@@ -205,6 +330,11 @@ make create_migration m="Add user table"  # Create
 make migrate                               # Apply
 make downgrade                             # Rollback
 ```
+
+**Gotchas:**
+- Alembic autogenerate may falsely detect removal of indexes on existing tables — manually review migration files
+- If migration fails partway, version may already be stamped — use `alembic stamp <previous_rev>` before re-running
+- Multi-word table names need explicit `__tablename__` in model
 
 ## Code Style
 - Line length: 120 characters
@@ -262,8 +392,8 @@ class Workout(BaseDbModel):
 - `PrimaryKey[T]`, `Unique[T]`, `UniqueIndex[T]`, `Indexed[T]` - Constraints with generic type
 - `str_10`, `str_50`, `str_100`, `str_255` - String length limits
 - `email`, `numeric_10_2`, `numeric_15_5`, `datetime_tz` - Specialized types
-- `FKUser` - Pre-defined foreign key relationships
-- `OneToMany[T]`, `ManyToOne[T]` - Relationship types
+- `FKUser`, `FKMedicalDocument`, `FKChatSession` - Pre-defined foreign key relationships
+- `OneToMany[T]`, `ManyToOne[T]` - Relationship types (avoid for cascade-delete models)
 
 ### Repositories Layer (`app/repositories/`)
 
@@ -329,6 +459,8 @@ app/api/routes/
 ├── __init__.py          # Head router (imports all versions)
 ├── v1/                  # API version 1
 │   ├── __init__.py      # Version router (includes all v1 routes)
+│   ├── ai.py            # AI status endpoint
+│   ├── chat.py          # Chat session + message endpoints
 │   └── example.py       # Specific routes
 ```
 
@@ -350,9 +482,35 @@ app/api/routes/
 - Request: request → main.py → head_router → version_router → router → endpoint → service
 - Response: service → response_model validation → router → version_router → head_router → main.py → client
 
-## Verifying Changes
+## Testing
 
-When asked or when you consider it appropriate, you can verify changes in several ways:
+### Structure
+```
+tests/
+├── conftest.py              # Global fixtures (DB, mocks, test client)
+├── factories.py             # Factory-boy factories for all models
+├── api/v1/
+│   ├── conftest.py          # API auth fixtures (developer, API key)
+│   └── test_*.py
+├── services/
+├── repositories/
+├── providers/
+│   └── conftest.py          # Provider-specific sample data
+├── tasks/
+│   └── conftest.py          # Celery sync execution mocking
+├── integrations/
+└── utils_tests/
+```
+
+### Conventions
+- Transaction rollback per test for isolation
+- Factory-boy for consistent test data (`tests/factories.py`)
+- Auto-use fixtures mock Redis, Celery, and external APIs globally
+- Hierarchical conftest.py: global → API-specific → provider-specific
+- Fast password hashing in tests (avoids bcrypt overhead)
+- `asyncio_mode = "auto"` in pytest config
+
+## Verifying Changes
 
 ### API Testing
 ```bash
@@ -364,7 +522,7 @@ curl -X POST http://localhost:8000/api/v1/endpoint -H "Content-Type: application
 ### Database Verification
 ```bash
 # Connect to PostgreSQL
-docker exec -it postgres__open-wearables psql -U open-wearables -d open-wearables
+docker exec -it postgres__health-assistant psql -U open-wearables -d open-wearables
 
 # Example queries
 SELECT * FROM table_name LIMIT 5;
