@@ -1,214 +1,186 @@
 
-# Open Wearables
+# Health Assistant
 
 <div align="left">
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-Welcome-blue.svg)](https://github.com/the-momentum/open-wearables/issues)
 ![Built with: FastAPI + React + Tanstack](https://img.shields.io/badge/Built%20with-FastAPI%20%2B%20React%20%2B%20Tanstack-green.svg)
-[![Discord](https://img.shields.io/badge/Discord-Join%20Chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/qrcfFnNE6H)
+![AI: Ollama (Local)](https://img.shields.io/badge/AI-Ollama%20(Local)-blueviolet.svg)
 
 </div>
 
 ---
 
-**Documentation**: https://docs.openwearables.io
-
----
-
-Open-source platform that unifies wearable device data from multiple providers and enables AI-powered health insights through natural language automations. Build health applications faster with a single API, embeddable widgets, and intelligent webhook notifications.
+Personal health AI assistant that combines wearable data, medical documents, and symptom tracking with an AI chat interface powered by local LLMs. Built on top of [Open Wearables](https://github.com/the-momentum/open-wearables). Privacy-first: everything runs locally.
 
 ## What It Does
 
-Open Wearables provides a unified API and developer portal to connect and sync data from multiple wearable devices and fitness platforms. Instead of implementing separate integrations for each provider (e.g., Garmin, Whoop, Apple Health), you can use a single platform to access normalized health data and build intelligent health insights through AI-powered automations.
+Health Assistant unifies three data sources into a single platform with an AI chat interface:
 
-<div align="center">
-<img width="597" height="449" alt="image" src="https://github.com/user-attachments/assets/b626405d-99a3-4ff7-b044-442483a3edea" />
-</div>
+1. **Wearable Data** — Heart rate, HRV, sleep, steps, workouts from Apple Watch (and Garmin, Polar, Suunto, Whoop)
+2. **Medical Documents** — Blood tests, doctor reports parsed via OCR/AI (Docling) into structured lab results
+3. **Symptom Tracking** — Daily logging of migraines, headaches, pain, mood, energy, and more
 
-> [!IMPORTANT]
-> **For Individuals**: This platform isn't just for developers - individuals can self-host it to take control of their own wearable data. Connect your devices, explore your health metrics through the unified API, and stay tuned for upcoming features like the AI Health Assistant and personal health insights automations. Best of all, your data stays on your own infrastructure, giving you complete privacy and control.
+An **AI chat** powered by Ollama (running on your own hardware) can query all three data sources via tool-calling to answer health questions grounded in your actual data.
 
-## Why Use It
+> **Privacy First**: No data leaves your network. The LLM runs locally on your GPU via Ollama. No third-party API calls. Your health data stays yours.
 
-**For Developers building health apps:**
-- 🔌 Integrate multiple wearable providers through one API instead of maintaining separate implementations
-- 📊 Access normalized health data across different devices (heart rate, sleep, activity, steps, etc.)
-- 🏠 Self-hosted solution - deploy on your own infrastructure with full data control
-- 🚀 No third-party dependencies for core functionality - run it locally with `docker compose up`
-- 🤖 Build AI-powered health insights and automations using natural language (coming soon)
-- 🧩 Embeddable widgets for easy integration into your applications (coming soon)
+## Key Features
 
-**The Problem It Solves:**
-
-Building a health app that supports multiple wearables typically requires:
-- Significant development effort per provider (Garmin, Whoop, Apple Health, etc.) to implement OAuth flows, data mapping, and sync logic
-- Managing different OAuth flows and APIs for each service
-- Handling various data formats and units
-- Maintaining multiple SDKs and dealing with API changes
-
-Open Wearables handles this complexity so you can focus on building your product 🚀
-
-## Use Cases
-
-- 🏃 **Fitness Coaching Apps**: Connect user wearables to provide personalized training recommendations. Running coaches can create users, share connection links via WhatsApp, and test AI insights capabilities
-- 🏥 **Healthcare Platforms**: Aggregate patient health data from various devices and set up automations for health alerts
-- 💪 **Wellness Applications**: Track and analyze user activity across different wearables with AI-powered insights
-- 🔬 **Research Projects**: Collect standardized health data from multiple sources
-- 🧪 **Product Pilots**: Non-technical product owners can test platform functionality by sharing connection links with users without needing their own app
-- 👤 **Personal Use**: Individuals can self-host the platform to connect their own wearables, chat with their health data using the AI Health Assistant, and set up personal health insights - all with complete data privacy and control
-
-## Getting Started
-
-Get Open Wearables up and running in minutes.
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/the-momentum/open-wearables.git
-   cd open-wearables
-   ```
-
-2. **Configure environment variables:**
-   
-   **Backend configuration:**
-   ```bash
-   cp ./backend/config/.env.example ./backend/config/.env
-   ```
-   
-   **Frontend configuration:**
-   ```bash
-   cp ./frontend/.env.example ./frontend/.env
-   ```
-
-3. **Start the application**
-   
-   **Using Docker (Recommended):**
-   
-   The easiest way to get started is with Docker Compose:
-   ```bash
-   docker compose up -d
-   ```
-   
-   For local development setup without Docker take a look at [docs](https://docs.openwearables.io/quickstart#local-development-setup)
-
-4. **Log in to the developer portal:**
-
-   An admin account is automatically created on startup using the `ADMIN_EMAIL` and `ADMIN_PASSWORD` environment variables (defaults: `admin@admin.com` / `your-secure-password`).
-
-   Open http://localhost:3000 to access the developer portal and create API keys.
-
-5. **Seed sample data** (optional):
-   If you want test users and sample activity data:
-   ```bash
-   make seed
-   ```
-
-   This will create:
-   - Test users
-   - Sample activity data for test users
-
-
-6. **View API documentation:**
-
-   Open http://localhost:8000/docs in your browser to explore the interactive Swagger UI.
-
-## Core Features
-
-### Developer Portal Dashboard
-Web-based dashboard for managing your integration:
-- 📈 **General Statistics**: View number of users and data points at a glance
-- 👥 **User Management**: Add users via the portal or through the API
-- 📋 **User Details**: View connected data sources, integration status, and user metrics with visualizations
-- 🔑 **API Key Management**: Generate and manage credentials in the Credentials tab
-
-### Health Insights & Automations (coming soon)
-The platform's most powerful feature - define intelligent health insights using natural language:
-- 💬 **Natural Language Conditions**: Describe when notifications should be triggered in plain English
-- 🔔 **Webhook Notifications**: Configure your backend endpoint to receive real-time health insights
-- 🧪 **Test Automation**: Run dry runs on historical data to see how automations work in practice
-- 👤 **Human-in-the-Loop**: Mark incorrect AI interpretations during testing to continuously improve the system
-- ✨ **Improve Description**: AI-powered suggestions to refine your automation descriptions
-- 📜 **Automation Logs**: Review past automation triggers and provide feedback
-
-### AI Health Assistant (coming soon)
-- 💬 Interactive chat interface for debugging and exploring user data
-- 🧩 Embeddable widget that can be integrated into any app with just a few lines of code
-- 🔄 Customizable AI models (swap models to match your needs)
-- 🔍 Natural language queries about user health metrics
-
-### Unified API
-Access health data through a consistent REST API regardless of the source device.
-
-### Provider Support
-- ☁️ **Cloud-based**: Garmin, Suunto, Polar (more comming soon!)
-- 📱 **SDK-based**: Apple Health (via XML export and webhooks)
-
-### OAuth Flow Management
-Simplified connection process for end users:
-1. Generate a connection link for your user (or use the SDK widget)
-2. User authenticates with their wearable provider
-3. Data automatically syncs to your platform
-4. Access via unified API
-
-### SDK & Widgets (coming soon)
-- 🔌 **Connection Widget**: Allow users to connect their wearables directly from your app
-- 🤖 **AI Health Assistant Widget**: Embed the AI chat interface for user health queries
-- 🍏 **Flutter SDK**: Handles HealthKit permissions, background sync, and data normalization
+- **AI Health Chat** — Ask questions about your health data in natural language. The AI uses tool-calling to query your labs, symptoms, and wearables, giving answers grounded in real data instead of generic advice.
+- **Unified Wearable Data** — 100+ Apple HealthKit metrics normalized into a single time-series model. Supports Garmin, Polar, Suunto, Whoop, and Apple Health.
+- **Medical Document Parsing** — Upload blood test PDFs/images. Docling (IBM) extracts text, then an LLM structures it into lab results with values, units, and reference ranges.
+- **Symptom Tracking** — Log daily symptoms with severity (0-10), duration, triggers, and notes. Track patterns over time.
+- **Correlation Analysis** — Cross-correlate any combination of wearable metrics, lab results, and symptoms to find patterns.
+- **Local LLM** — Powered by Ollama running on your own hardware (e.g., RTX 5090 over LAN). No cloud dependencies.
+- **MCP Server** — Model Context Protocol server exposes health data tools to external AI assistants (Claude Desktop, Cursor, etc.)
 
 ## Architecture
 
-Built with:
-- 🐍 **Backend**: FastAPI (Python)
-- ⚛️ **Frontend**: React + TanStack Router + TypeScript (Vite)
-- 🗄️ **Database**: PostgreSQL + Redis
-- ⚙️ **Task Queue**: Celery (background jobs for data syncing and processing)
-- 🔐 **Authentication**: Self-contained (no external auth services required)
-- 📡 **API Style**: RESTful with OpenAPI/Swagger documentation
+```
+health-assistant/
+├── backend/           # Python/FastAPI backend
+│   ├── app/
+│   │   ├── api/routes/v1/  # REST endpoints (chat, labs, symptoms, ai)
+│   │   ├── models/         # SQLAlchemy models (wearables + health assistant)
+│   │   ├── services/       # Ollama integration, health tools, chat service
+│   │   └── repositories/   # Data access layer
+│   └── migrations/         # Alembic migrations
+├── frontend/          # React 19 + TypeScript
+│   └── src/
+│       ├── routes/         # Pages (dashboard, chat, users)
+│       ├── components/     # UI components (chat sidebar, messages, input)
+│       └── hooks/          # TanStack Query hooks
+├── mcp/               # MCP server (FastMCP) for AI tool-calling
+└── docs/              # Documentation
+```
 
-The platform is designed for self-hosting, meaning each deployment serves a single organization. No multi-tenancy complexity.
+| Layer | Technology |
+|-------|-----------|
+| Backend | Python 3.13+, FastAPI, SQLAlchemy 2.0, Celery + Redis |
+| Frontend | React 19, TypeScript, TanStack Router/Query, Tailwind + shadcn/ui |
+| AI/ML | Ollama (local LLM), Docling (OCR/PDF parsing) |
+| Database | PostgreSQL |
+| Infrastructure | Docker Compose (8 services) |
 
-## Development Roadmap
+## Getting Started
 
-**Available**:
-- Developer portal
-- User management (via API and developer portal)
-- OAuth flow for Garmin, Polar, and Suunto
-- Workout data sync and API access for Garmin, Polar, and Suunto
+### Prerequisites
 
-**In Development**:
-- Core health data endpoints
-- Health Insights automations
-- AI Health Assistant
-- Mobile SDK (Flutter)
-- Enhanced widget integration
+- Docker and Docker Compose
+- An Ollama instance running on your network (e.g., on a machine with a GPU)
 
-## Join the Discord
+### 1. Clone and configure
 
-Join our Discord community to connect with other developers, get help, share ideas, and stay updated on the latest developments:
+```bash
+git clone https://github.com/robin-sci/health-assistant.git
+cd health-assistant
 
-[![Discord](https://img.shields.io/badge/Discord-Join%20Chat-5865F2?logo=discord&logoColor=white)](https://discord.gg/qrcfFnNE6H)
+# Backend config
+cp ./backend/config/.env.example ./backend/config/.env
+# Edit .env to set OLLAMA_HOST to your Ollama instance (e.g., http://192.168.1.100:11434)
 
-## Contributing
+# Frontend config
+cp ./frontend/.env.example ./frontend/.env
+```
 
-Contributions are welcome! This project aims to be a community-driven solution for wearable data integration.
+### 2. Start all services
 
-See [CONTRIBUTING.md](CONTRIBUTING.md) for details on:
-- 🛠️ Setting up the development environment
-- 📝 Code style and testing requirements
-- 🔀 Pull request process
+```bash
+docker compose up -d
+```
+
+This starts 8 containers:
+
+| Container | Purpose |
+|-----------|---------|
+| `backend__health-assistant` | FastAPI app |
+| `frontend__health-assistant` | React dev server |
+| `postgres__health-assistant` | PostgreSQL database |
+| `redis__health-assistant` | Redis (Celery broker + cache) |
+| `celery-worker__health-assistant` | Background task worker |
+| `celery-beat__health-assistant` | Periodic task scheduler |
+| `flower__health-assistant` | Celery monitoring |
+| `docling__health-assistant` | Document OCR/parsing sidecar |
+
+### 3. Apply migrations and seed data
+
+```bash
+make migrate
+make seed    # Creates test users, 120 lab results, ~147 symptom entries, sample wearable data
+```
+
+### 4. Access the app
+
+| Service | URL |
+|---------|-----|
+| Frontend | http://localhost:3000 |
+| API | http://localhost:8000 |
+| API Docs (Swagger) | http://localhost:8000/docs |
+| Celery Flower | http://localhost:5555 |
+
+Default admin credentials: `admin@admin.com` / `your-secure-password`
+
+## AI Chat
+
+The chat interface lets you ask health questions in natural language. The AI has access to 6 health data tools:
+
+| Tool | What it does |
+|------|-------------|
+| `get_recent_labs` | Fetch recent blood test results with reference ranges |
+| `get_lab_trend` | Track how a specific lab marker changes over time |
+| `get_symptom_timeline` | View symptom entries with severity and frequency stats |
+| `get_wearable_summary` | Heart rate, steps, sleep, HRV, and other wearable metrics |
+| `get_daily_summary` | Combined snapshot of all health data for a specific date |
+| `correlate_metrics` | Find correlations between any two health metrics |
+
+Example questions:
+- "How has my HbA1c trended over the last year?"
+- "Do my migraines correlate with poor sleep?"
+- "Give me a summary of yesterday's health data"
+- "What were my iron levels in the last blood test?"
+
+## Development
+
+### Rebuilding after changes
+
+No volume mounts for app code. Must rebuild containers after changes:
+
+```bash
+docker compose up -d --build app        # After backend changes
+docker compose up -d --build frontend   # After frontend changes
+```
+
+### Code quality
+
+```bash
+# Backend
+cd backend && uv run ruff check . --fix && uv run ruff format .
+
+# Frontend
+cd frontend && pnpm run lint:fix && pnpm run format
+```
+
+### Useful commands
+
+| Command | Description |
+|---------|-------------|
+| `make build` | Build Docker images |
+| `make run` | Start in detached mode |
+| `make stop` | Stop containers |
+| `make test` | Run backend tests |
+| `make migrate` | Apply database migrations |
+| `make create_migration m="..."` | Create new migration |
+| `make seed` | Seed sample data |
+
+## Based On
+
+This project is a fork of [Open Wearables](https://github.com/the-momentum/open-wearables), an open-source platform for unified wearable data. Health Assistant extends it with:
+- Medical document parsing (Docling + LLM extraction)
+- Symptom tracking
+- AI chat interface with tool-calling (Ollama)
+- Health data correlation engine
 
 ## License
 
-[MIT License](LICENSE) - Use it freely in commercial and open-source projects.
-
-## Community
-
-- 💬 [GitHub Discussions](https://github.com/the-momentum/open-wearables/discussions) - Questions and ideas
-
----
-
-**Note**: This is an early-stage project under active development. APIs may change before version 1.0. We recommend pinning to specific versions in production and following the changelog for updates.
-
----
-
-The backend part of this project was generated from the [Python AI Kit](https://github.com/the-momentum/python-ai-kit).
+[MIT License](LICENSE)
