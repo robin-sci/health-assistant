@@ -31,6 +31,12 @@ services:
       - REDIS_HOST=redis
     ports:
       - "8000:8000"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/docs')"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     depends_on:
       db:
         condition: service_healthy
@@ -69,10 +75,19 @@ services:
     environment:
       - DB_HOST=db
       - REDIS_HOST=redis
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.integrations.celery.core inspect ping --timeout 10"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
     depends_on:
-      - redis
-      - db
-      - app
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      app:
+        condition: service_started
     volumes:
       - uploads_data:/app/uploads
     develop:
@@ -94,10 +109,19 @@ services:
     environment:
       - DB_HOST=db
       - REDIS_HOST=redis
+    healthcheck:
+      test: ["CMD-SHELL", "celery -A app.integrations.celery.core inspect ping --timeout 10"]
+      interval: 30s
+      timeout: 15s
+      retries: 3
+      start_period: 30s
     depends_on:
-      - redis
-      - db
-      - app
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      app:
+        condition: service_started
     develop:
       watch:
         - action: sync+restart
@@ -119,10 +143,19 @@ services:
       - REDIS_HOST=redis
     ports:
       - 5555:5555
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5555/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 15s
     depends_on:
-      - redis
-      - db
-      - app
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      app:
+        condition: service_started
     develop:
       watch:
         - action: sync
@@ -136,6 +169,11 @@ services:
     image: redis:8
     ports:
       - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     volumes:
       - redis_data:/var/lib/redis/data
 
@@ -145,6 +183,12 @@ services:
     restart: on-failure
     ports:
       - "5001:5001"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:5001/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
 
   frontend:
     build:
@@ -155,6 +199,12 @@ services:
     pull_policy: never
     ports:
       - "3000:3000"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:3000/ || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     depends_on:
       - app
     develop:

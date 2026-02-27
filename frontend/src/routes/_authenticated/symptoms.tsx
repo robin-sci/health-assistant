@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { format } from 'date-fns';
-import { Activity, Plus, X } from 'lucide-react';
+import { Activity, AlertCircle, Plus, X } from 'lucide-react';
 import {
   BarChart,
   Bar,
@@ -590,13 +590,55 @@ function SymptomsPage() {
     ...(selectedType !== 'all' ? { symptom_type: selectedType } : {}),
   };
 
-  const { data: entries = [], isLoading: isLoadingEntries } = useSymptoms(
-    userId,
-    filterParams
-  );
-  const { data: symptomTypes = [] } = useSymptomTypes(userId);
+  const {
+    data: entries = [],
+    isLoading: isLoadingEntries,
+    error: entriesError,
+    refetch: refetchEntries,
+  } = useSymptoms(userId, filterParams);
+  const {
+    data: symptomTypes = [],
+    isLoading: isLoadingTypes,
+    error: symptomTypesError,
+    refetch: refetchSymptomTypes,
+  } = useSymptomTypes(userId);
 
-  const isLoading = isLoadingEntries || !userId;
+  const isLoading = isLoadingEntries || isLoadingTypes || !userId;
+
+  if (!isLoading && (entriesError || symptomTypesError)) {
+    const errorMessage =
+      entriesError instanceof Error
+        ? entriesError.message
+        : symptomTypesError instanceof Error
+          ? symptomTypesError.message
+          : 'An unexpected error occurred';
+
+    return (
+      <div className="p-8">
+        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-center gap-3">
+          <AlertCircle className="h-5 w-5 text-red-400 shrink-0" />
+          <div className="flex-1">
+            <p className="text-sm font-medium text-red-400">
+              Failed to load symptoms
+            </p>
+            <p className="text-xs text-red-400/70 mt-0.5">{errorMessage}</p>
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            size="sm"
+            onClick={() => {
+              refetchEntries();
+              refetchSymptomTypes();
+            }}
+            className="border-red-500/30 text-red-300 hover:text-red-200 hover:border-red-500/50"
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="p-8 space-y-8 min-h-screen">

@@ -1,5 +1,6 @@
 import { useState, useCallback, useRef } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
+import { AlertCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { useUsers } from '@/hooks/api/use-users';
 import {
@@ -12,6 +13,7 @@ import { chatService } from '@/lib/api';
 import { ChatSidebar } from '@/components/chat/chat-sidebar';
 import { ChatMessages } from '@/components/chat/chat-messages';
 import { ChatInput } from '@/components/chat/chat-input';
+import { Button } from '@/components/ui/button';
 import type { HAChatMessage, ChatStreamEvent } from '@/lib/api/types';
 
 export const Route = createFileRoute('/_authenticated/chat')({
@@ -43,10 +45,18 @@ function ChatPage() {
   const { data: usersData } = useUsers({ limit: 1 });
   const userId = usersData?.items?.[0]?.id ?? '';
 
-  const { data: sessions = [], isLoading: isLoadingSessions } =
-    useChatSessions(userId);
+  const {
+    data: sessions = [],
+    isLoading: isLoadingSessions,
+    error: sessionsError,
+    refetch: refetchSessions,
+  } = useChatSessions(userId);
 
-  const { data: sessionDetail } = useChatSession(selectedSessionId ?? '');
+  const {
+    data: sessionDetail,
+    error: sessionError,
+    refetch: refetchSession,
+  } = useChatSession(selectedSessionId ?? '');
 
   const createSession = useCreateChatSession();
   const deleteSession = useDeleteChatSession();
@@ -209,6 +219,32 @@ function ChatPage() {
     <div className="flex h-screen overflow-hidden bg-black">
       {/* Session sidebar */}
       <div className="w-[260px] shrink-0 flex flex-col">
+        {sessionsError && (
+          <div className="p-4">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-red-400 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-red-400">
+                  Failed to load sessions
+                </p>
+                <p className="text-xs text-red-400/70 mt-0.5">
+                  {sessionsError instanceof Error
+                    ? sessionsError.message
+                    : 'An unexpected error occurred'}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => refetchSessions()}
+                className="border-red-500/30 text-red-300 hover:text-red-200 hover:border-red-500/50"
+              >
+                Retry
+              </Button>
+            </div>
+          </div>
+        )}
         <ChatSidebar
           sessions={sessions}
           selectedSessionId={selectedSessionId}
@@ -253,6 +289,33 @@ function ChatPage() {
             </div>
           )}
         </div>
+
+        {sessionError && selectedSessionId && (
+          <div className="p-4 border-b border-zinc-900">
+            <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-center gap-3">
+              <AlertCircle className="h-5 w-5 text-red-400 shrink-0" />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-red-400">
+                  Failed to load chat session
+                </p>
+                <p className="text-xs text-red-400/70 mt-0.5">
+                  {sessionError instanceof Error
+                    ? sessionError.message
+                    : 'An unexpected error occurred'}
+                </p>
+              </div>
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => refetchSession()}
+                className="border-red-500/30 text-red-300 hover:text-red-200 hover:border-red-500/50"
+              >
+                Retry
+              </Button>
+            </div>
+          </div>
+        )}
 
         {/* Messages */}
         <ChatMessages

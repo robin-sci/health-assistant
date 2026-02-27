@@ -1,54 +1,68 @@
-import { Users, Activity, Database } from 'lucide-react';
+import {
+  HeartPulse,
+  FlaskConical,
+  FileText,
+  MessageSquare,
+} from 'lucide-react';
 import { StatsCard } from './stats-card';
 import { cn } from '@/lib/utils';
-import type { DashboardStats } from '@/lib/api/types';
 
-export interface StatsGridProps {
-  stats: DashboardStats;
+export interface HealthStatsGridProps {
+  symptomsThisWeek: number;
+  totalLabs: number;
+  totalDocuments: number;
+  totalChatSessions: number;
   className?: string;
 }
 
-export function StatsGrid({ stats, className }: StatsGridProps) {
+// Keep old props type for backwards compat (not used after dashboard rewrite)
+export interface StatsGridProps extends HealthStatsGridProps {
+  className?: string;
+}
+
+export function StatsGrid({
+  symptomsThisWeek,
+  totalLabs,
+  totalDocuments,
+  totalChatSessions,
+  className,
+}: HealthStatsGridProps) {
   const statCards = [
     {
-      title: 'Total Users',
-      value: stats.total_users.count,
-      suffix: '',
-      description: 'Registered users',
-      icon: Users,
-      growth: stats.total_users.weekly_growth,
+      title: 'Symptoms This Week',
+      value: symptomsThisWeek,
+      description: 'Logged in the last 7 days',
+      icon: HeartPulse,
     },
     {
-      title: 'Active Connections',
-      value: stats.active_conn.count,
-      suffix: '',
-      description: 'Connected wearables',
-      icon: Activity,
-      growth: stats.active_conn.weekly_growth,
+      title: 'Lab Results',
+      value: totalLabs,
+      description: 'Blood test records',
+      icon: FlaskConical,
     },
     {
-      title: 'Data Points',
-      value: stats.data_points.count / 1000,
-      suffix: 'K',
-      description: 'Health data collected',
-      icon: Database,
-      decimalPlaces: 1,
-      growth: stats.data_points.weekly_growth,
+      title: 'Documents',
+      value: totalDocuments,
+      description: 'Medical files uploaded',
+      icon: FileText,
+    },
+    {
+      title: 'Chat Sessions',
+      value: totalChatSessions,
+      description: 'AI health conversations',
+      icon: MessageSquare,
     },
   ];
 
   return (
-    <div className={cn('grid gap-4 md:grid-cols-2 lg:grid-cols-3', className)}>
+    <div className={cn('grid gap-4 md:grid-cols-2 lg:grid-cols-4', className)}>
       {statCards.map((stat) => (
         <StatsCard
           key={stat.title}
           title={stat.title}
           value={stat.value}
-          suffix={stat.suffix}
           description={stat.description}
           icon={stat.icon}
-          growth={stat.growth}
-          decimalPlaces={stat.decimalPlaces}
         />
       ))}
     </div>

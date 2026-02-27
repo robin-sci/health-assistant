@@ -10,6 +10,7 @@ import {
   MessageSquare,
   UploadCloud,
   Activity,
+  X,
 } from 'lucide-react';
 import logotype from '@/logotype.svg';
 import { cn } from '@/lib/utils';
@@ -61,15 +62,33 @@ const menuItems = [
   },
 ];
 
-export function SimpleSidebar() {
+interface SimpleSidebarProps {
+  isOpen?: boolean;
+  onClose?: () => void;
+}
+
+export function SimpleSidebar({ isOpen = false, onClose }: SimpleSidebarProps) {
   const location = useLocation();
   const { logout, isLoggingOut } = useAuth();
 
   return (
-    <aside className="relative w-64 bg-black flex flex-col border-r border-zinc-900">
+    <aside
+      className={cn(
+        'w-64 bg-black flex-col border-r border-zinc-900',
+        isOpen ? 'fixed inset-y-0 left-0 z-50 flex' : 'hidden',
+        'md:relative md:flex'
+      )}
+    >
       {/* Header */}
-      <div className="p-4 border-b border-zinc-900">
+      <div className="p-4 border-b border-zinc-900 flex items-center justify-between">
         <img src={logotype} alt="Open Wearables" className="h-auto" />
+        <button
+          onClick={onClose}
+          className="md:hidden text-zinc-400 hover:text-white transition-colors"
+          aria-label="Close sidebar"
+        >
+          <X className="h-5 w-5" />
+        </button>
       </div>
 
       {/* Navigation */}
@@ -97,6 +116,7 @@ export function SimpleSidebar() {
             <Link
               key={item.title}
               to={item.url}
+              onClick={onClose}
               className={cn(
                 'flex items-center gap-3 px-3 py-2 rounded-md text-sm transition-all duration-200',
                 isActive

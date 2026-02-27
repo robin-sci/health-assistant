@@ -1,5 +1,9 @@
 export { StatsCard, type StatsCardProps } from './stats-card';
-export { StatsGrid, type StatsGridProps } from './stats-grid';
+export {
+  StatsGrid,
+  type StatsGridProps,
+  type HealthStatsGridProps,
+} from './stats-grid';
 export {
   DataMetricsSection,
   type DataMetricsSectionProps,
@@ -7,7 +11,9 @@ export {
   type WorkoutTypeMetric,
 } from './data-metrics-section';
 export {
+  QuickActionsSection,
   RecentUsersSection,
+  type QuickActionsSectionProps,
   type RecentUsersSectionProps,
 } from './recent-users-section';
 export {
@@ -22,3 +28,7 @@ export {
   DataSummaryCard,
   type DataSummaryCardProps,
 } from './data-summary-card';
+export {
+  WeeklyTrendsSection,
+  type WeeklyTrendsSectionProps,
+} from './weekly-trends-section';
