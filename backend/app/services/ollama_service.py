@@ -70,6 +70,7 @@ class OllamaService:
         messages: list[ChatMessage],
         model: str | None = None,
         tools: list[ToolDefinition] | None = None,
+        format: str | None = None,
     ) -> dict[str, Any]:
         """Send a non-streaming chat request to Ollama.
 
@@ -82,6 +83,8 @@ class OllamaService:
         }
         if tools:
             payload["tools"] = tools
+        if format:
+            payload["format"] = format
 
         async with self._client() as client:
             response = await client.post("/api/chat", json=payload)
