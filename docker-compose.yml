@@ -36,6 +36,8 @@ services:
         condition: service_healthy
       redis:
         condition: service_started
+    volumes:
+      - uploads_data:/app/uploads
     develop:
       watch:
         - action: sync
@@ -71,6 +73,8 @@ services:
       - redis
       - db
       - app
+    volumes:
+      - uploads_data:/app/uploads
     develop:
       watch:
         - action: sync+restart
@@ -136,7 +140,7 @@ services:
       - redis_data:/var/lib/redis/data
 
   docling:
-    image: ghcr.io/ds4sd/docling-serve:latest
+    image: ghcr.io/docling-project/docling-serve
     container_name: docling__health-assistant
     restart: on-failure
     ports:
@@ -173,3 +177,4 @@ volumes:
   postgres_data:
   redis_data:
   docling_data:
+  uploads_data:

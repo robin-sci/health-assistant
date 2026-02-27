@@ -142,6 +142,10 @@ class Settings(BaseSettings):
     # DOCLING SETTINGS
     docling_url: str = "http://docling:5001"
 
+    # DOCUMENT UPLOAD SETTINGS
+    upload_dir: str = "/app/uploads"
+    max_upload_size_mb: int = 50
+
     @field_validator("cors_origins", mode="after")
     @classmethod
     def assemble_cors_origins(cls, v: str | list[str]) -> list[str] | str:
