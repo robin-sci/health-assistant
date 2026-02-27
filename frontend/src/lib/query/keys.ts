@@ -1,4 +1,8 @@
-import type { HealthDataParams, UserQueryParams } from '../api/types';
+import type {
+  HealthDataParams,
+  SymptomListParams,
+  UserQueryParams,
+} from '../api/types';
 
 export const queryKeys = {
   auth: {
@@ -168,5 +172,14 @@ export const queryKeys = {
       [...queryKeys.labs.all, 'trend', userId, testName] as const,
     testNames: (userId: string) =>
       [...queryKeys.labs.all, 'testNames', userId] as const,
+  },
+
+  symptoms: {
+    all: ['symptoms'] as const,
+    lists: () => [...queryKeys.symptoms.all, 'list'] as const,
+    list: (userId: string, params?: SymptomListParams) =>
+      [...queryKeys.symptoms.lists(), userId, params] as const,
+    types: (userId: string) =>
+      [...queryKeys.symptoms.all, 'types', userId] as const,
   },
 } as const;

@@ -13,6 +13,7 @@ export const ROUTES = {
   chat: '/chat',
   documents: '/documents',
   labs: '/labs',
+  symptoms: '/symptoms',
 
   // Widget routes
   widgetConnect: '/widget/connect',

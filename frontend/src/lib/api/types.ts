@@ -694,3 +694,39 @@ export const TERMINAL_DOCUMENT_STATUSES: DocumentStatus[] = [
   'completed',
   'failed',
 ];
+
+// ============================================================
+// Symptoms (Phase 3: Symptom Tracking)
+// ============================================================
+
+export interface SymptomEntry {
+  id: string;
+  user_id: string;
+  symptom_type: string;
+  severity: number;
+  notes: string | null;
+  recorded_at: string;
+  duration_minutes: number | null;
+  triggers: string[] | null;
+}
+
+export interface SymptomCreate {
+  user_id: string;
+  symptom_type: string;
+  severity: number;
+  notes?: string | null;
+  recorded_at: string;
+  duration_minutes?: number | null;
+  triggers?: string[] | null;
+}
+
+export interface SymptomListParams {
+  days?: number;
+  symptom_type?: string;
+}
+
+export interface SymptomFrequency {
+  symptom_type: string;
+  count: number;
+  avg_severity: number;
+}

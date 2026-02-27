@@ -96,4 +96,8 @@ export const API_ENDPOINTS = {
   labTrend: (testName: string) =>
     `/api/v1/labs/trends/${encodeURIComponent(testName)}`,
   labTestNames: '/api/v1/labs/test-names',
+
+  // Symptoms endpoints
+  symptoms: '/api/v1/symptoms',
+  symptomTypes: '/api/v1/symptoms/types',
 } as const;

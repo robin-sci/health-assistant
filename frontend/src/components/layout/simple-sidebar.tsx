@@ -9,6 +9,7 @@ import {
   ExternalLink,
   MessageSquare,
   UploadCloud,
+  Activity,
 } from 'lucide-react';
 import logotype from '@/logotype.svg';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,11 @@ const menuItems = [
     title: 'Labs',
     url: ROUTES.labs,
     icon: FlaskConical,
+  },
+  {
+    title: 'Symptoms',
+    url: ROUTES.symptoms,
+    icon: Activity,
   },
   {
     title: 'Users',
