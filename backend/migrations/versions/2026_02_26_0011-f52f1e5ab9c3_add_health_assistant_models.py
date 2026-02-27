@@ -6,9 +6,8 @@ Revises: 31c7f45b636f
 """
 from typing import Sequence, Union
 
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision: str = 'f52f1e5ab9c3'

@@ -12,7 +12,6 @@ from uuid import UUID
 from sqlalchemy.orm import Session
 
 from app.config import settings
-
 from app.models.chat_message import ChatMessage
 from app.models.chat_session import ChatSession
 from app.repositories.chat_message_repository import ChatMessageRepository

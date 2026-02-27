@@ -3,7 +3,8 @@ from typing import Annotated
 from uuid import UUID
 
 from fastapi import Depends
-from sqlalchemy import Engine, JSON, String, Text, UUID as SQL_UUID, create_engine, inspect
+from sqlalchemy import JSON, Engine, String, Text, create_engine, inspect
+from sqlalchemy import UUID as SQL_UUID
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,

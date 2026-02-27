@@ -11,7 +11,6 @@ from sqlalchemy import text
 from app.database import SessionLocal
 from app.models import LabResult, SymptomEntry
 
-
 # Realistic lab results with reference ranges
 LAB_TESTS: list[dict] = [
     {
