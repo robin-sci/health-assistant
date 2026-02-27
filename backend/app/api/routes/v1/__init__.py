@@ -8,6 +8,7 @@ from .chat import router as chat_router
 from .connections import router as connections_router
 from .dashboard import router as dashboard_router
 from .developers import router as developers_router
+from .documents import router as documents_router
 from .events import router as events_router
 from .external_connectors import router as external_connectors_router
 from .garmin_webhooks import router as garmin_webhooks_router
@@ -69,5 +70,6 @@ v1_router.include_router(ai_router, tags=["ai"])
 v1_router.include_router(chat_router, tags=["chat"])
 v1_router.include_router(labs_router, tags=["labs"])
 v1_router.include_router(symptoms_router, tags=["symptoms"])
+v1_router.include_router(documents_router, tags=["documents"])
 
 __all__ = ["v1_router"]
