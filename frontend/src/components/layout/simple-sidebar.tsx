@@ -3,10 +3,12 @@ import {
   Home,
   Users,
   FileText,
+  FlaskConical,
   LogOut,
   Settings,
   ExternalLink,
   MessageSquare,
+  UploadCloud,
 } from 'lucide-react';
 import logotype from '@/logotype.svg';
 import { cn } from '@/lib/utils';
@@ -24,6 +26,16 @@ const menuItems = [
     title: 'Chat',
     url: ROUTES.chat,
     icon: MessageSquare,
+  },
+  {
+    title: 'Documents',
+    url: ROUTES.documents,
+    icon: UploadCloud,
+  },
+  {
+    title: 'Labs',
+    url: ROUTES.labs,
+    icon: FlaskConical,
   },
   {
     title: 'Users',
