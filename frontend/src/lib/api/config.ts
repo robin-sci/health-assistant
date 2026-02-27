@@ -85,4 +85,15 @@ export const API_ENDPOINTS = {
   chatSessions: '/api/v1/chat/sessions',
   chatSessionDetail: (id: string) => `/api/v1/chat/sessions/${id}`,
   chatSessionMessages: (id: string) => `/api/v1/chat/sessions/${id}/messages`,
+
+  // Documents endpoints
+  documents: '/api/v1/documents',
+  documentUpload: '/api/v1/documents/upload',
+  documentDetail: (id: string) => `/api/v1/documents/${id}`,
+
+  // Labs endpoints
+  labs: '/api/v1/labs',
+  labTrend: (testName: string) =>
+    `/api/v1/labs/trends/${encodeURIComponent(testName)}`,
+  labTestNames: '/api/v1/labs/test-names',
 } as const;

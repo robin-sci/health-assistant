@@ -626,3 +626,71 @@ export interface GarminBackfillStatus {
   max_attempts: number;
   permanently_failed: boolean;
 }
+
+// ============================================================
+// Documents & Labs (Phase 2: Document Parsing Pipeline)
+// ============================================================
+
+export type DocumentStatus =
+  | 'pending'
+  | 'parsing'
+  | 'parsed'
+  | 'extracting'
+  | 'completed'
+  | 'failed';
+
+export interface MedicalDocument {
+  id: string;
+  user_id: string;
+  title: string;
+  document_type: string;
+  file_path: string;
+  file_type: string;
+  raw_text: string | null;
+  parsed_data: Record<string, unknown> | null;
+  document_date: string | null;
+  status: DocumentStatus;
+  created_at: string;
+}
+
+export interface MedicalDocumentCreate {
+  title: string;
+  document_type: string;
+  document_date?: string | null;
+}
+
+export interface LabResult {
+  id: string;
+  document_id: string | null;
+  user_id: string;
+  test_name: string;
+  test_code: string | null;
+  value: number;
+  unit: string;
+  reference_min: number | null;
+  reference_max: number | null;
+  status: string | null;
+  recorded_at: string;
+}
+
+export interface LabTrendPoint {
+  recorded_at: string;
+  value: number;
+  unit: string;
+  reference_min: number | null;
+  reference_max: number | null;
+  status: string | null;
+}
+
+export interface LabTrendResponse {
+  test_name: string;
+  unit: string;
+  data_points: LabTrendPoint[];
+  latest_value: number | null;
+  latest_status: string | null;
+}
+
+export const TERMINAL_DOCUMENT_STATUSES: DocumentStatus[] = [
+  'completed',
+  'failed',
+];

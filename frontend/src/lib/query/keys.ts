@@ -150,4 +150,23 @@ export const queryKeys = {
     lists: () => [...queryKeys.invitations.all, 'list'] as const,
     list: () => [...queryKeys.invitations.lists()] as const,
   },
+
+  documents: {
+    all: ['documents'] as const,
+    lists: () => [...queryKeys.documents.all, 'list'] as const,
+    list: (userId: string) => [...queryKeys.documents.lists(), userId] as const,
+    details: () => [...queryKeys.documents.all, 'detail'] as const,
+    detail: (id: string) => [...queryKeys.documents.details(), id] as const,
+  },
+
+  labs: {
+    all: ['labs'] as const,
+    lists: () => [...queryKeys.labs.all, 'list'] as const,
+    list: (userId: string, params?: { days?: number; test_name?: string }) =>
+      [...queryKeys.labs.lists(), userId, params] as const,
+    trend: (userId: string, testName: string) =>
+      [...queryKeys.labs.all, 'trend', userId, testName] as const,
+    testNames: (userId: string) =>
+      [...queryKeys.labs.all, 'testNames', userId] as const,
+  },
 } as const;

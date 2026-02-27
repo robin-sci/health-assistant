@@ -11,6 +11,8 @@ export const ROUTES = {
   users: '/users',
   settings: '/settings',
   chat: '/chat',
+  documents: '/documents',
+  labs: '/labs',
 
   // Widget routes
   widgetConnect: '/widget/connect',
